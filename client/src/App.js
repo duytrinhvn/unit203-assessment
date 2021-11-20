@@ -58,13 +58,11 @@ export default class App extends Component {
   }
 
   removeLineItem = (lineItemId) => {
-    console.log(lineItemId);
     const filteredItems = this.state.lineItems.filter(
       (item) => item.id !== lineItemId
     );
-    console.log(filteredItems);
-    this.setState({ lineItems: filteredItems });
-    this.calculateFees();
+    this.setState({ lineItems: filteredItems }, () => this.calculateFees());
+    console.log(this.state.lineItems);
   };
 
   addLineItem = (lineItem) => {
