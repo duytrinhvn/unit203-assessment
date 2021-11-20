@@ -1,0 +1,14 @@
+.imgDiv {
+  width: 20%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.descDiv {
+  width: 25%;
+  height: 100%;
+}
+
+.descDiv2{
+  right: 0;
+}
