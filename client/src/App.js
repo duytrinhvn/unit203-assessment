@@ -1,33 +1,29 @@
-import "./App.css";
-import { useEffect, useState } from "react";
 import axios from "axios";
+import React, { Component } from "react";
+import "./App.css";
 
-//Styling variables
 const BLUE = "#172162"; //"rgb(23, 33, 98)";
 const LIGHT_GREY = "#6e7484";
 const BLACK = "#000000";
 
-function App() {
-  const [lineItems, setLineItems] = useState([]);
-  const [subtotal, setSubtotal] = useState(0);
-  const [hst, setHst] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [postalcode, setPostalCode] = useState("N/A");
+export default class App extends Component {
+  state = {
+    lineItems: [],
+    subtotal: 0,
+    hst: 0,
+    total: 0,
+    postalcode: "",
+    shipping: 15,
+  };
 
-  let SHIPPING = 15;
+  componentDidMount = async () => {
+    const res = await axios.get("http://localhost:5000/api/products");
+    this.setState({ lineItems: res.data });
+    this.calculateFees();
+  };
 
-  useEffect(() => {
-    async function fetchAPI() {
-      const res = await axios.get("http://localhost:5000/api/products");
-      setLineItems(res.data);
-    }
-
-    fetchAPI();
-    if (lineItems) calculateFees();
-  }, [lineItems.length]);
-
-  const renderLineItems = () => {
-    return lineItems.map((item) => (
+  renderLineItems() {
+    return this.state.lineItems.map((item) => (
       <div key={item.id} className="w-full h-80 flex flex-row relative">
         <div className="imgDiv py-10">
           <img src={item.image} />
@@ -52,53 +48,58 @@ function App() {
           </p>
           <button
             style={{ textDecoration: "underline" }}
-            onClick={() => removeLineItem(item.id)}
+            onClick={() => this.removeLineItem(item.id)}
           >
             Remove
           </button>
         </div>
       </div>
     ));
+  }
+
+  removeLineItem = (lineItemId) => {
+    console.log(lineItemId);
+    const filteredItems = this.state.lineItems.filter(
+      (item) => item.id !== lineItemId
+    );
+    console.log(filteredItems);
+    this.setState({ lineItems: filteredItems });
+    this.calculateFees();
   };
 
-  const removeLineItem = (lineItemId) => {
-    const filteredItems = lineItems.filter((item) => item.id !== lineItemId);
-    setLineItems(filteredItems);
+  addLineItem = (lineItem) => {
+    this.setState({ lineItem: [...this.state.lineItems, lineItem] });
   };
 
-  const addLineItem = (lineItem) => {
-    setLineItems([...lineItems, lineItem]);
-  };
-
-  const calculateFees = () => {
+  calculateFees = () => {
     let subtotal = 0;
     let tax = 0;
-    let shipping = SHIPPING;
+    let shipping = this.state.shipping;
     let total = 0;
 
-    lineItems.map((item) => {
+    this.state.lineItems.map((item) => {
       subtotal += item.price;
     });
     tax = subtotal * 0.13;
 
     total = subtotal + tax + shipping;
 
-    setSubtotal(subtotal);
-    setHst(tax);
-    setTotal(total);
+    this.setState({ subtotal });
+    this.setState({ hst: tax });
+    this.setState({ total });
   };
 
-  const handlePostalcode = async (e) => {
+  handlePostalcode = async (e) => {
     e.preventDefault();
-    setPostalCode(e.target.value);
+    this.setState({ postalcode: e.target.value });
 
     const res = await axios.post("http://localhost:5000/api/products", {
       postalcode: e.target.value,
-      lineItems,
+      lineItems: this.state.lineItems,
     });
 
     const deliveryDates = res.data;
-    const updatedLineItems = lineItems.map((item) => {
+    const updatedLineItems = this.state.lineItems.map((item) => {
       let updatedLineItem = item;
       deliveryDates.map((date) => {
         if (item.id === date.itemId) {
@@ -111,38 +112,40 @@ function App() {
       return updatedLineItem;
     });
 
-    setLineItems(updatedLineItems);
+    this.setState({ lineItems: updatedLineItems });
   };
 
-  if (lineItems === [] && total === 0) {
-    return <div>Loading...</div>;
-  } else {
+  render() {
     return (
       <div className="p-20">
         <h1 className="font-semibold text-4xl" style={{ color: BLUE }}>
           Your Cart
         </h1>
-        {renderLineItems()}
+        {this.renderLineItems()}
         <div className="px-52 space-y-5">
           <div className="flex flex-row relative">
             <p className="font-semibold">Subtotal</p>
             <p className="font-semibold absolute right-0">
-              ${subtotal.toFixed(2)}
+              ${this.state.subtotal.toFixed(2)}
             </p>
           </div>
           <div className="flex flex-row relative">
             <p className="font-semibold">Taxes (Estimated)</p>
-            <p className="font-semibold absolute right-0">${hst.toFixed(2)}</p>
+            <p className="font-semibold absolute right-0">
+              ${this.state.hst.toFixed(2)}
+            </p>
           </div>
           <div className="flex flex-row relative">
             <p className="font-semibold">Shipping</p>
             <p className="font-semibold absolute right-0">
-              ${SHIPPING.toFixed(2)}
+              ${this.state.shipping.toFixed(2)}
             </p>
           </div>
           <div className="flex flex-row relative">
             <p className="font-bold">Total</p>
-            <p className="font-bold absolute right-0">${total.toFixed(2)}</p>
+            <p className="font-bold absolute right-0">
+              ${this.state.total.toFixed(2)}
+            </p>
           </div>
         </div>
 
@@ -152,7 +155,7 @@ function App() {
             type="text"
             name="postalcode"
             placeholder="Example: L8V 4D1, etc"
-            onChange={handlePostalcode}
+            onChange={this.handlePostalcode}
             className="w-3/4 p-5 m-5"
           />
         </form>
@@ -160,5 +163,3 @@ function App() {
     );
   }
 }
-
-export default App;
