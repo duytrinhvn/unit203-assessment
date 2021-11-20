@@ -70,12 +70,13 @@ app.use(express.json());
 app.post("/api/products", (req, res) => {
   // calculate del date
   let postalcode = req.body.postalcode;
+  let lineItems = req.body.lineItems;
 
   if (postalcode !== "") {
     postalcode = postalcode.charAt(0);
   }
 
-  const updatedLineItems = defaultLineItems.map((item) => {
+  const updatedLineItems = lineItems.map((item) => {
     let deliveryDate = "N/A";
     DELIVERY_DATES.map((date) => {
       if (

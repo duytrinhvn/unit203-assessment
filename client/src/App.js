@@ -22,9 +22,9 @@ function App() {
       setLineItems(res.data);
     }
 
-    fetchAPI().then(() => {});
+    fetchAPI();
     if (lineItems) calculateFees();
-  }, []);
+  }, [lineItems.length]);
 
   const renderLineItems = () => {
     return lineItems.map((item) => (
@@ -94,6 +94,7 @@ function App() {
 
     const res = await axios.post("http://localhost:5000/api/products", {
       postalcode: e.target.value,
+      lineItems,
     });
 
     setLineItems(res.data);
