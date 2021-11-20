@@ -76,7 +76,7 @@ app.post("/api/products", (req, res) => {
     postalcode = postalcode.charAt(0);
   }
 
-  const updatedLineItems = lineItems.map((item) => {
+  const deliveryDates = lineItems.map((item) => {
     let deliveryDate = "N/A";
     DELIVERY_DATES.map((date) => {
       if (
@@ -87,12 +87,12 @@ app.post("/api/products", (req, res) => {
       }
     });
     return {
-      ...item,
+      itemId: item.id,
       deliveryDate,
     };
   });
 
-  res.status(201).json(updatedLineItems);
+  res.status(201).json(deliveryDates);
 });
 
 app.get("/api/products", (req, res) => {

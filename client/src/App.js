@@ -97,7 +97,21 @@ function App() {
       lineItems,
     });
 
-    setLineItems(res.data);
+    const deliveryDates = res.data;
+    const updatedLineItems = lineItems.map((item) => {
+      let updatedLineItem = item;
+      deliveryDates.map((date) => {
+        if (item.id === date.itemId) {
+          updatedLineItem = {
+            ...item,
+            deliveryDate: date.deliveryDate,
+          };
+        }
+      });
+      return updatedLineItem;
+    });
+
+    setLineItems(updatedLineItems);
   };
 
   if (lineItems === [] && total === 0) {
