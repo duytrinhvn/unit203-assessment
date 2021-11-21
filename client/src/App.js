@@ -1,29 +1,31 @@
 import axios from "axios";
-import React, { Component } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 
 const BLUE = "#172162"; //"rgb(23, 33, 98)";
 const LIGHT_GREY = "#6e7484";
 const BLACK = "#000000";
 
-export default class App extends Component {
-  state = {
-    lineItems: [],
-    subtotal: 0,
-    hst: 0,
-    total: 0,
-    postalcode: "",
-    shipping: 15,
-  };
+function App() {
+  const [lineItems, setLineItems] = useState([]);
+  const [subtotal, setSubtotal] = useState(0);
+  const [hst, setHst] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [postalcode, setPostalcode] = useState("");
+  const [shipping, setShipping] = useState(15);
 
-  componentDidMount = async () => {
-    const res = await axios.get("http://localhost:5000/api/products");
-    this.setState({ lineItems: res.data });
-    this.calculateFees();
-  };
+  useEffect(() => {
+    async function fetchApi() {
+      const res = await axios.get("http://localhost:5000/api/products");
+      setLineItems(res.data);
+      calculateFees();
+    }
 
-  renderLineItems() {
-    return this.state.lineItems.map((item) => (
+    fetchApi();
+  }, []);
+
+  const renderLineItems = () => {
+    return lineItems.map((item) => (
       <div key={item.id} className="w-full h-80 flex flex-row relative">
         <div className="imgDiv py-10">
           <img src={item.image} />
@@ -48,56 +50,59 @@ export default class App extends Component {
           </p>
           <button
             style={{ textDecoration: "underline" }}
-            onClick={() => this.removeLineItem(item.id)}
+            onClick={() => removeLineItem(item.id)}
           >
             Remove
           </button>
         </div>
       </div>
     ));
-  }
-
-  removeLineItem = (lineItemId) => {
-    const filteredItems = this.state.lineItems.filter(
-      (item) => item.id !== lineItemId
-    );
-    this.setState({ lineItems: filteredItems }, () => this.calculateFees());
-    console.log(this.state.lineItems);
   };
 
-  addLineItem = (lineItem) => {
-    this.setState({ lineItem: [...this.state.lineItems, lineItem] });
+  const removeLineItem = (lineItemId) => {
+    const filteredItems = lineItems.filter((item) => item.id !== lineItemId);
+    // this.setState({ lineItems: filteredItems }, () => calculateFees());
+    setLineItems(filteredItems);
   };
 
-  calculateFees = () => {
-    let subtotal = 0;
-    let tax = 0;
-    let shipping = this.state.shipping;
-    let total = 0;
+  useEffect(() => {
+    calculateFees();
+  }, [lineItems]);
 
-    this.state.lineItems.map((item) => {
-      subtotal += item.price;
+  const addLineItem = (lineItem) => {
+    setLineItems([...lineItems, lineItem]);
+  };
+
+  const calculateFees = () => {
+    let subtotalCalc = 0;
+    let taxCalc = 0;
+    let shippingCalc = shipping;
+    let totalCalc = 0;
+
+    lineItems.map((item) => {
+      subtotalCalc += item.price;
     });
-    tax = subtotal * 0.13;
 
-    total = subtotal + tax + shipping;
+    taxCalc = subtotalCalc * 0.13;
 
-    this.setState({ subtotal });
-    this.setState({ hst: tax });
-    this.setState({ total });
+    totalCalc = subtotalCalc + taxCalc + shippingCalc;
+
+    setSubtotal(subtotalCalc);
+    setHst(taxCalc);
+    setTotal(totalCalc);
   };
 
-  handlePostalcode = async (e) => {
+  const handlePostalcode = async (e) => {
     e.preventDefault();
-    this.setState({ postalcode: e.target.value });
+    setPostalcode({ postalcode: e.target.value });
 
     const res = await axios.post("http://localhost:5000/api/products", {
       postalcode: e.target.value,
-      lineItems: this.state.lineItems,
+      lineItems: lineItems,
     });
 
     const deliveryDates = res.data;
-    const updatedLineItems = this.state.lineItems.map((item) => {
+    const updatedLineItems = lineItems.map((item) => {
       let updatedLineItem = item;
       deliveryDates.map((date) => {
         if (item.id === date.itemId) {
@@ -110,54 +115,50 @@ export default class App extends Component {
       return updatedLineItem;
     });
 
-    this.setState({ lineItems: updatedLineItems });
+    setLineItems(updatedLineItems);
   };
 
-  render() {
-    return (
-      <div className="p-20">
-        <h1 className="font-semibold text-4xl" style={{ color: BLUE }}>
-          Your Cart
-        </h1>
-        {this.renderLineItems()}
-        <div className="px-52 space-y-5">
-          <div className="flex flex-row relative">
-            <p className="font-semibold">Subtotal</p>
-            <p className="font-semibold absolute right-0">
-              ${this.state.subtotal.toFixed(2)}
-            </p>
-          </div>
-          <div className="flex flex-row relative">
-            <p className="font-semibold">Taxes (Estimated)</p>
-            <p className="font-semibold absolute right-0">
-              ${this.state.hst.toFixed(2)}
-            </p>
-          </div>
-          <div className="flex flex-row relative">
-            <p className="font-semibold">Shipping</p>
-            <p className="font-semibold absolute right-0">
-              ${this.state.shipping.toFixed(2)}
-            </p>
-          </div>
-          <div className="flex flex-row relative">
-            <p className="font-bold">Total</p>
-            <p className="font-bold absolute right-0">
-              ${this.state.total.toFixed(2)}
-            </p>
-          </div>
+  return (
+    <div className="p-20">
+      <h1 className="font-semibold text-4xl" style={{ color: BLUE }}>
+        Your Cart
+      </h1>
+      {renderLineItems()}
+      <div className="px-52 space-y-5">
+        <div className="flex flex-row relative">
+          <p className="font-semibold">Subtotal</p>
+          <p className="font-semibold absolute right-0">
+            ${subtotal.toFixed(2)}
+          </p>
         </div>
-
-        <form>
-          <label>Postal Code</label>
-          <input
-            type="text"
-            name="postalcode"
-            placeholder="Example: L8V 4D1, etc"
-            onChange={this.handlePostalcode}
-            className="w-3/4 p-5 m-5"
-          />
-        </form>
+        <div className="flex flex-row relative">
+          <p className="font-semibold">Taxes (Estimated)</p>
+          <p className="font-semibold absolute right-0">${hst.toFixed(2)}</p>
+        </div>
+        <div className="flex flex-row relative">
+          <p className="font-semibold">Shipping</p>
+          <p className="font-semibold absolute right-0">
+            ${shipping.toFixed(2)}
+          </p>
+        </div>
+        <div className="flex flex-row relative">
+          <p className="font-bold">Total</p>
+          <p className="font-bold absolute right-0">${total.toFixed(2)}</p>
+        </div>
       </div>
-    );
-  }
+
+      <form>
+        <label>Postal Code</label>
+        <input
+          type="text"
+          name="postalcode"
+          placeholder="Example: L8V 4D1, etc"
+          onChange={handlePostalcode}
+          className="w-3/4 p-5 m-5"
+        />
+      </form>
+    </div>
+  );
 }
+
+export default App;
